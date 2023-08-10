@@ -17,10 +17,24 @@ module Fog
 
           object = ::Google::Apis::StorageV1::Object.new(**options)
 
-          @storage_json.copy_object(source_bucket, source_object,
+          begin
+            @storage_json.copy_object(source_bucket, source_object,
                                     target_bucket, target_object,
                                     object, options: request_options, **filter_keyword_args(options))
+          rescue ::Google::Apis::ClientError => e
+            if e.message=~ \
+               %r{invalid: Cannot .*(ACL|access control).* object when uniform bucket-level access is enabled.}
+             Fog::Logger.warning("Could not copy an objecet with predefind ACL "\
+                                  "to a bucket with uniform bucket level access. "\
+                                  "Retrying with no object ACL.") 
+             options[:destination_predefined_acl] = nil
+             retry
+            else 
+             raise e
+            end
+          end
         end
+
 
         private
 

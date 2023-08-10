@@ -17,9 +17,11 @@ module Fog
 
           acl_object = ::Google::Apis::StorageV1::ObjectAccessControl.new(**acl)
 
-          @storage_json.insert_object_access_control(
-            bucket_name, object_name, acl_object
-          )
+          begin
+            @storage_json.insert_object_access_control(bucket_name, object_name, acl_object)
+          rescue ::Google::Apis::ClientError => e
+            handle_uniform_bucket_level_access_error(e)
+          end
         end
       end
 
@@ -30,6 +32,7 @@ module Fog
           # :no-coverage:
         end
       end
+
     end
   end
 end

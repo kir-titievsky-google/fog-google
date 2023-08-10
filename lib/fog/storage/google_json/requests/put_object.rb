@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require "json"
 
 module Fog
   module Storage
@@ -53,21 +54,35 @@ module Fog
           object_config = ::Google::Apis::StorageV1::Object.new(
             **options.merge(:name => object_name)
           )
+	  begin
+		  @storage_json.insert_object(
+		    bucket_name, object_config,
+		    :content_encoding => content_encoding,
+		    :if_generation_match => if_generation_match,
+		    :if_generation_not_match => if_generation_not_match,
+		    :if_metageneration_match => if_metageneration_match,
+		    :if_metageneration_not_match => if_metageneration_not_match,
+		    :kms_key_name => kms_key_name,
+		    :predefined_acl => predefined_acl,
+		    :options => ::Google::Apis::RequestOptions.default.merge(options),
+		    # see https://developers.google.com/api-client-library/ruby/guide/media_upload
+		    :content_type => options[:content_type],
+		    :upload_source => data
+		  )
 
-          @storage_json.insert_object(
-            bucket_name, object_config,
-            :content_encoding => content_encoding,
-            :if_generation_match => if_generation_match,
-            :if_generation_not_match => if_generation_not_match,
-            :if_metageneration_match => if_metageneration_match,
-            :if_metageneration_not_match => if_metageneration_not_match,
-            :kms_key_name => kms_key_name,
-            :predefined_acl => predefined_acl,
-            :options => ::Google::Apis::RequestOptions.default.merge(options),
-            # see https://developers.google.com/api-client-library/ruby/guide/media_upload
-            :content_type => options[:content_type],
-            :upload_source => data
-          )
+          rescue ::Google::Apis::ClientError => e
+           if e.message=~ \
+               %r{invalid: Cannot .*(ACL|access control).* object when uniform bucket-level access is enabled.}
+
+              Fog::Logger.warning("Could not create an objecet with predefind ACL "\
+                                  "in a bucket with uniform bucket level access. "\
+				  "Retrying with no object ACL.") 
+	      predefined_acl = nil 
+	      retry
+           else 
+	     raise e
+           end
+          end 
         end
 
         protected

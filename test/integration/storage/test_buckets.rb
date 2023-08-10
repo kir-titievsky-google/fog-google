@@ -109,4 +109,12 @@ class TestStorageRequests < StorageShared
 
     assert_equal(result.role, acl[:role], "incorrect bucket access control role")
   end
+
+  def test_put_bucket_with_uniform_bucket_level_access
+    bucket_name = new_bucket_name
+    @client.put_bucket(bucket_name, nil, nil, {uniform_bucket_level_access: true})
+    result = @client.get_bucket(bucket_name)
+    puts result[:iam_config]
+    assert_equal(result[:iam_config][:uniform_bucket_level_access], true, "Bucket created with UBLA has the setting turned off.")
+  end 
 end

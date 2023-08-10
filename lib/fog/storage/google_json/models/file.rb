@@ -129,6 +129,7 @@ module Fog
         private
 
         attr_writer :directory
+
       end
     end
   end

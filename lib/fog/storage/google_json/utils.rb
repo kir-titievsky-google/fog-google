@@ -35,6 +35,19 @@ module Fog
           query << "Expires=#{params[:headers]['Date']}"
           "#{params[:host]}/#{params[:path]}?#{query.join('&')}"
         end
+
+        def handle_uniform_bucket_level_access_error(e)
+           if e.message=~ \
+               %r{invalid: Cannot .*(ACL|access control).* object when uniform bucket-level access is enabled.}
+              
+              Fog::Logger.warning("Attempt to set an ACL on an object ignored "\
+                                  "because the object is in a bucket with uniform "\
+                                  "bucket level access enabled.")
+           else 
+              raise e
+           end
+        end 
+
       end
     end
   end
